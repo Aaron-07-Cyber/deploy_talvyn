@@ -28,12 +28,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware
 # Get allowed origins from environment variable
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+# For local: http://localhost:3000
+# For production: https://talvyntechnologies.com
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:3000,http://localhost:5173"
+).split(",")
+
+# CORS middleware - Security fix
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,  # ✅ Secure
+    allow_origins=ALLOWED_ORIGINS,  # Now secure and configurable
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -358,6 +364,14 @@ async def submit_job_application(
         if resume.content_type not in allowed_types:
             raise HTTPException(status_code=400, detail="Only PDF and DOC/DOCX files are allowed")
         
+        # Read file content once
+        content = await resume.read()
+        
+        # Check file size (10MB limit)
+        MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB in bytes
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File size must be less than 10MB")
+        
         # Generate unique filename
         file_extension = resume.filename.split('.')[-1]
         unique_filename = f"{uuid.uuid4()}_{name.replace(' ', '_')}_resume.{file_extension}"
@@ -366,9 +380,8 @@ async def submit_job_application(
         # Create uploads directory if it doesn't exist
         os.makedirs("uploads", exist_ok=True)
         
-        # Save uploaded resume
+        # Save uploaded resume using content we already read
         async with aiofiles.open(file_path, 'wb') as f:
-            content = await resume.read()
             await f.write(content)
         
         # Create application object
