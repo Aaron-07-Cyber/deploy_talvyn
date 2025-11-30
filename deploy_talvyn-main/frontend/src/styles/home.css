@@ -1,0 +1,28 @@
+/* home.css */
+section {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s ease-out;
+}
+
+/* when section is visible */
+section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Mobile fix for Android devices - ensure Contact section is always visible */
+@media (max-width: 768px) {
+  #contact {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+}
+
+/* Additional mobile viewport fix */
+@media screen and (max-width: 768px) and (-webkit-min-device-pixel-ratio: 1) {
+  section {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
